@@ -1,9 +1,19 @@
 (function ($) {
-	
-	"use strict";
 
-	// Header Type = Fixed
-  $(window).scroll(function() {
+  "use strict";
+
+  // =========================
+  // 🔥 API CONFIG
+  // =========================
+  const API_KEY = "YOUR_API_KEY_HERE";
+  const BASE_URL = "https://newsapi.org/v2/top-headlines";
+
+  let articles = [];
+
+  // =========================
+  // HEADER SCROLL EFFECT
+  // =========================
+  $(window).scroll(function () {
     var scroll = $(window).scrollTop();
     var box = $('.header-text').height();
     var header = $('header').height();
@@ -15,187 +25,197 @@
     }
   });
 
-
-	$('.loop').owlCarousel({
-      center: true,
-      items:1,
-      loop:true,
-      autoplay: true,
-      nav: true,
-      margin:0,
-      responsive:{ 
-          1200:{
-              items:5
-          },
-          992:{
-              items:3
-          },
-          760:{
-            items:2
-        }
-      }
+  // =========================
+  // OWL CAROUSEL
+  // =========================
+  $('.loop').owlCarousel({
+    center: true,
+    items: 1,
+    loop: true,
+    autoplay: true,
+    nav: true,
+    margin: 0,
+    responsive: {
+      1200: { items: 5 },
+      992: { items: 3 },
+      760: { items: 2 }
+    }
   });
-  
+
+  // =========================
+  // MODAL LOGIN SYSTEM
+  // =========================
   $("#modal_trigger").leanModal({
-		top: 100,
-		overlay: 0.6,
-		closeButton: ".modal_close"
-});
-
-$(function() {
-		// Calling Login Form
-		$("#login_form").click(function() {
-				$(".social_login").hide();
-				$(".user_login").show();
-				return false;
-		});
-
-		// Calling Register Form
-		$("#register_form").click(function() {
-				$(".social_login").hide();
-				$(".user_register").show();
-				$(".header_title").text('Register');
-				return false;
-		});
-
-		// Going back to Social Forms
-		$(".back_btn").click(function() {
-				$(".user_login").hide();
-				$(".user_register").hide();
-				$(".social_login").show();
-				$(".header_title").text('Login');
-				return false;
-		});
-});
-
-  // Acc
-  $(document).on("click", ".naccs .menu div", function() {
-    var numberIndex = $(this).index();
-
-    if (!$(this).is("active")) {
-        $(".naccs .menu div").removeClass("active");
-        $(".naccs ul li").removeClass("active");
-
-        $(this).addClass("active");
-        $(".naccs ul").find("li:eq(" + numberIndex + ")").addClass("active");
-
-        var listItemHeight = $(".naccs ul")
-          .find("li:eq(" + numberIndex + ")")
-          .innerHeight();
-        $(".naccs ul").height(listItemHeight + "px");
-      }
+    top: 100,
+    overlay: 0.6,
+    closeButton: ".modal_close"
   });
-	
 
-	// Menu Dropdown Toggle
-  if($('.menu-trigger').length){
-    $(".menu-trigger").on('click', function() { 
-      $(this).toggleClass('active');
-      $('.header-area .nav').slideToggle(200);
-    });
+  $("#login_form").click(function () {
+    $(".social_login").hide();
+    $(".user_login").show();
+    return false;
+  });
+
+  $("#register_form").click(function () {
+    $(".social_login").hide();
+    $(".user_register").show();
+    $(".header_title").text('Register');
+    return false;
+  });
+
+  $(".back_btn").click(function () {
+    $(".user_login, .user_register").hide();
+    $(".social_login").show();
+    $(".header_title").text('Login');
+    return false;
+  });
+
+  // =========================
+  // 📰 FETCH GAMING NEWS (API)
+  // =========================
+  async function loadGamingNews() {
+    try {
+      const res = await fetch(
+        `${BASE_URL}?category=gaming&language=en&pageSize=10&apiKey=${API_KEY}`
+      );
+
+      const data = await res.json();
+      articles = data.articles || [];
+
+      renderNews();
+      activateFirstArticle();
+
+    } catch (err) {
+      console.error("API Error:", err);
+    }
   }
 
+  // =========================
+  // 🧩 RENDER NEWS UI
+  // =========================
+  function renderNews() {
 
-  // Menu elevator animation
-  $('.scroll-to-section a[href*=\\#]:not([href=\\#])').on('click', function() {
-    if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'') && location.hostname == this.hostname) {
-      var target = $(this.hash);
-      target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
+    let menuHTML = "";
+    let listHTML = "";
+
+    articles.forEach((article, index) => {
+
+      // LEFT SIDE (menu)
+      menuHTML += `
+        <div class="news-item ${index === 0 ? "active" : ""}" data-index="${index}">
+          <div class="thumb">
+            <div class="row">
+              <div class="col-lg-4 col-sm-4 col-12">
+                <h4>${(article.title || "No Title").slice(0, 30)}...</h4>
+                <span class="date">
+                  ${article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : "Today"}
+                </span>
+              </div>
+
+              <div class="col-lg-4 col-sm-4 d-none d-sm-block">
+                <span class="category">Gaming</span>
+              </div>
+
+              <div class="col-lg-4 col-sm-4 col-12">
+                <i class="fa fa-star"></i>
+                <i class="fa fa-star"></i>
+                <i class="fa fa-star"></i>
+                <i class="fa fa-star"></i>
+                <span class="rating">LIVE</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // RIGHT SIDE (detail system)
+      listHTML += `
+        <li class="${index === 0 ? "active" : ""}">
+          <div class="thumb">
+            <div class="row">
+              <div class="col-lg-12">
+
+                <div class="client-content">
+                  <img src="assets/images/quote.png" alt="">
+                  <p>${article.description || "No description available."}</p>
+                </div>
+
+                <div class="down-content">
+                  <img src="${article.urlToImage || 'assets/images/client-image.jpg'}" alt="">
+                  <div class="right-content">
+                    <h4>${article.author || "Gaming News"}</h4>
+                    <span>${article.source?.name || "Source"}</span>
+                  </div>
+                </div>
+
+                <a href="${article.url}" target="_blank">Read Full Article →</a>
+
+              </div>
+            </div>
+          </div>
+        </li>
+      `;
+    });
+
+    $(".naccs .menu").html(menuHTML);
+    $(".naccs ul").html(listHTML);
+  }
+
+  // =========================
+  // 🎯 ACTIVATE FIRST ARTICLE
+  // =========================
+  function activateFirstArticle() {
+    $(".naccs .menu div:first").addClass("active");
+    $(".naccs ul li:first").addClass("active");
+  }
+
+  // =========================
+  // 🖱️ CLICK HANDLER (NEWS SWITCHING)
+  // =========================
+  $(document).on("click", ".naccs .menu div", function () {
+
+    const index = $(this).data("index");
+
+    $(".naccs .menu div").removeClass("active");
+    $(this).addClass("active");
+
+    $(".naccs ul li").removeClass("active");
+    $(".naccs ul li").eq(index).addClass("active");
+  });
+
+  // =========================
+  // NAVIGATION / SCROLL MENU
+  // =========================
+  $('.menu-trigger').on('click', function () {
+    $(this).toggleClass('active');
+    $('.header-area .nav').slideToggle(200);
+  });
+
+  $('.scroll-to-section a[href*=\\#]').on('click', function () {
+    if (location.pathname === this.pathname && location.hostname === this.hostname) {
+      const target = $(this.hash);
       if (target.length) {
-        var width = $(window).width();
-        if(width < 991) {
-          $('.menu-trigger').removeClass('active');
-          $('.header-area .nav').slideUp(200);  
-        }       
         $('html,body').animate({
-          scrollTop: (target.offset().top) + 1
+          scrollTop: target.offset().top + 1
         }, 700);
         return false;
       }
     }
   });
 
+  // =========================
+  // PAGE LOAD ANIMATION
+  // =========================
+  $(window).on('load', function () {
+    $('#js-preloader').addClass('loaded');
+  });
+
+  // =========================
+  // INIT APP
+  // =========================
   $(document).ready(function () {
-      $(document).on("scroll", onScroll);
-      
-      //smoothscroll
-      $('.scroll-to-section a[href^="#"]').on('click', function (e) {
-          e.preventDefault();
-          $(document).off("scroll");
-          
-          $('.scroll-to-section a').each(function () {
-              $(this).removeClass('active');
-          })
-          $(this).addClass('active');
-        
-          var target = this.hash,
-          menu = target;
-          var target = $(this.hash);
-          $('html, body').stop().animate({
-              scrollTop: (target.offset().top) + 1
-          }, 500, 'swing', function () {
-              window.location.hash = target;
-              $(document).on("scroll", onScroll);
-          });
-      });
+    loadGamingNews();
   });
-
-  function onScroll(event){
-      var scrollPos = $(document).scrollTop();
-      $('.nav a').each(function () {
-          var currLink = $(this);
-          var refElement = $(currLink.attr("href"));
-          if (refElement.position().top <= scrollPos && refElement.position().top + refElement.height() > scrollPos) {
-              $('.nav ul li a').removeClass("active");
-              currLink.addClass("active");
-          }
-          else{
-              currLink.removeClass("active");
-          }
-      });
-  }
-
-
-  // Acc
-  $(document).on("click", ".naccs .menu div", function() {
-    var numberIndex = $(this).index();
-
-    if (!$(this).is("active")) {
-        $(".naccs .menu div").removeClass("active");
-        $(".naccs ul li").removeClass("active");
-
-        $(this).addClass("active");
-        $(".naccs ul").find("li:eq(" + numberIndex + ")").addClass("active");
-
-        var listItemHeight = $(".naccs ul")
-          .find("li:eq(" + numberIndex + ")")
-          .innerHeight();
-        $(".naccs ul").height(listItemHeight + "px");
-      }
-  });
-
-
-	// Page loading animation
-	 $(window).on('load', function() {
-
-        $('#js-preloader').addClass('loaded');
-
-    });
-
-	
-
-	// Window Resize Mobile Menu Fix
-  function mobileNav() {
-    var width = $(window).width();
-    $('.submenu').on('click', function() {
-      if(width < 767) {
-        $('.submenu ul').removeClass('active');
-        $(this).find('ul').toggleClass('active');
-      }
-    });
-  }
-
-
-
 
 })(window.jQuery);
